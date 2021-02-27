@@ -79,3 +79,31 @@ func MakeTokenEndpoint(svc service.TokenGranter, clientService service.ClientDet
 		}, nil
 	}
 }
+
+type CheckTokenRequest struct {
+	Token         string
+	ClientDetails model.ClientDetails
+}
+
+type CheckTokenResponse struct {
+	OAuthDetails *model.OAuth2Details `json:"o_auth_details"`
+	Error        string               `json:"error"`
+}
+
+// MakeCheckTokenEndpoint : 將 endpoit 的 token 傳給GetOAuth2DetailsByAccessToken 驗證token是否有效
+func MakeCheckTokenEndpoint(svc service.TokenService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*CheckTokenRequest)
+		tokenDetails, err := svc.GetOAuth2DetailsByAccessToken(req.Token)
+
+		var errString = ""
+		if err != nil {
+			errString = err.Error()
+		}
+
+		return CheckTokenResponse{
+			OAuthDetails: tokenDetails,
+			Error:        errString,
+		}, nil
+	}
+}
