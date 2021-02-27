@@ -1,3 +1,12 @@
-# 授權服務器
+# Token Authorization
 
-https://github.com/longjoy/micro-go-book
+Base on OAuth2 and JWT to implement authorization system.
+
+### Install package
+
+```sh
+go mod tidy
+```
+
+### Reference
+* https://github.com/longjoy/micro-go-book
