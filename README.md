@@ -19,7 +19,7 @@ http://localhost:8500
 go mod tidy
 ```
 
-### Flow Acquire Token
+### Acquire Token flow
 #### 1. Create Token
 * Authorization is `clientId:clientSecret` to base64, so it is `Y2xpZW50SWQ6Y2xpZW50U2VjcmV0` 
 * username is `simaple` or `admin`
@@ -53,7 +53,7 @@ curl --location --request POST 'http://localhost:10098/oauth/token' \
 }
 ```
 
-#### 2. Ckeck Token
+#### 2. Check Token
 ##### Reqest
 ``` bash
 curl --location --request POST 'http://localhost:10098/oauth/check_token?token=...' \
