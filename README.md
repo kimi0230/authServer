@@ -21,9 +21,9 @@ go mod tidy
 
 ### Flow Acquire Token
 #### 1. Create Token
-> Authorization is clientId:clientSecret to base64,  Y2xpZW50SWQ6Y2xpZW50U2VjcmV0'
-> username is "simaple" or "admin"
-> password is "123456
+* Authorization is `clientId:clientSecret` to base64, so it is `Y2xpZW50SWQ6Y2xpZW50U2VjcmV0` 
+* username is `simaple` or `admin`
+* both password are `123456`
 
 ##### Reqest
 ``` bash
