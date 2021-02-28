@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -44,6 +45,47 @@ func (tokenGranter *ComposeTokenGranter) Grant(ctx context.Context, grantType st
 	}
 
 	return dispatchGranter.Grant(ctx, grantType, client, reader)
+}
+
+type UsernamePasswordTokenGranter struct {
+	supportGrantType   string
+	userDetailsService UserDetailsService
+	tokenService       TokenService
+}
+
+func NewUsernamePasswordTokenGranter(grantType string, userDetailsService UserDetailsService, tokenService TokenService) TokenGranter {
+	return &UsernamePasswordTokenGranter{
+		supportGrantType:   grantType,
+		userDetailsService: userDetailsService,
+		tokenService:       tokenService,
+	}
+}
+
+func (tokenGranter *UsernamePasswordTokenGranter) Grant(ctx context.Context,
+	grantType string, client *ClientDetails, reader *http.Request) (*OAuth2Token, error) {
+	if grantType != tokenGranter.supportGrantType {
+		return nil, ErrNotSupportGrantType
+	}
+	//  從請求取出帳密
+	username := reader.FormValue("username")
+	password := reader.FormValue("password")
+
+	if username == "" || password == "" {
+		return nil, ErrInvalidUsernameAndPasswordRequest
+	}
+
+	//驗證帳密
+	userDetails, err := tokenGranter.userDetailsService.GetUserDetailByUsername(ctx, username, password)
+
+	if err != nil {
+		return nil, ErrInvalidUsernameAndPasswordRequest
+	}
+
+	// 根據用戶和客戶端信息 生成token
+	return tokenGranter.tokenService.CreateAccessToken(&OAuth2Details{
+		Client: client,
+		User:   userDetails,
+	})
 }
 
 // Refresh Token
@@ -145,11 +187,10 @@ func (tokenService *DefaultTokenService) createAccessToken(refreshToken *OAuth2T
 	validitySeconds := oauth2Details.Client.AccessTokenValiditySeconds
 	s, _ := time.ParseDuration(strconv.Itoa(validitySeconds) + "s")
 	expiredTime := time.Now().Add(s)
-	u, _ := uuid.NewV4()
 	accessToken := &OAuth2Token{
 		RefreshToken: refreshToken,
 		ExpiresTime:  &expiredTime,
-		TokenValue:   u.String(),
+		TokenValue:   uuid.NewV4().String(),
 	}
 
 	if tokenService.tokenEnhancer != nil {
@@ -211,10 +252,9 @@ func (tokenService *DefaultTokenService) createRefreshToken(oauth2Details *OAuth
 	validitySeconds := oauth2Details.Client.RefreshTokenValiditySeconds
 	s, _ := time.ParseDuration(strconv.Itoa(validitySeconds) + "s")
 	expiredTime := time.Now().Add(s)
-	u, _ := uuid.NewV4()
 	refreshToken := &OAuth2Token{
 		ExpiresTime: &expiredTime,
-		TokenValue:  u.String(),
+		TokenValue:  uuid.NewV4().String(),
 	}
 
 	if tokenService.tokenEnhancer != nil {

@@ -5,8 +5,9 @@ import (
 	"authServer/service"
 	"context"
 	"errors"
-	"log"
 	"net/http"
+
+	"github.com/go-kit/kit/log"
 
 	"github.com/go-kit/kit/endpoint"
 )
@@ -49,6 +50,40 @@ func MakeClientAuthorizationMiddleware(logger log.Logger) endpoint.Middleware {
 				return nil, ErrInvalidClientRequest
 			}
 			return next(ctx, request)
+		}
+	}
+}
+
+func MakeOAuth2AuthorizationMiddleware(logger log.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			if err, ok := ctx.Value(OAuth2ErrorKey).(error); ok {
+				return nil, err
+			}
+			if _, ok := ctx.Value(OAuth2DetailsKey).(*model.OAuth2Details); !ok {
+				return nil, ErrInvalidUserRequest
+			}
+			return next(ctx, request)
+		}
+	}
+}
+
+func MakeAuthorityAuthorizationMiddleware(authority string, logger log.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			if err, ok := ctx.Value(OAuth2ErrorKey).(error); ok {
+				return nil, err
+			}
+			if details, ok := ctx.Value(OAuth2DetailsKey).(*model.OAuth2Details); !ok {
+				return nil, ErrInvalidClientRequest
+			} else {
+				for _, value := range details.User.Authorities {
+					if value == authority {
+						return next(ctx, request)
+					}
+				}
+				return nil, ErrNotPermit
+			}
 		}
 	}
 }

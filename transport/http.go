@@ -23,6 +23,27 @@ var (
 	ErrInvalidClientRequest = errors.New("invalid client message")
 )
 
+func makeOAuth2AuthorizationContext(tokenService service.TokenService, logger log.Logger) kithttp.RequestFunc {
+
+	return func(ctx context.Context, r *http.Request) context.Context {
+
+		// 取出 token
+		accessTokenValue := r.Header.Get("Authorization")
+		var err error
+		if accessTokenValue != "" {
+			// 從token獲取 用户和客户端信息
+			oauth2Details, err := tokenService.GetOAuth2DetailsByAccessToken(accessTokenValue)
+			if err == nil {
+				return context.WithValue(ctx, endpoint.OAuth2DetailsKey, oauth2Details)
+			}
+		} else {
+			err = ErrorTokenRequest
+		}
+
+		return context.WithValue(ctx, endpoint.OAuth2ErrorKey, err)
+	}
+}
+
 // makeClientAuthorizationContext : 請求令牌前先驗證header中的客戶端信息
 func makeClientAuthorizationContext(clientDetailsService service.ClientDetailsService, logger log.Logger) kithttp.RequestFunc {
 
@@ -112,6 +133,17 @@ func decodeTokenRequest(ctx context.Context, r *http.Request) (interface{}, erro
 		Reader:    r,
 	}, nil
 
+}
+
+func decodeCheckTokenRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	tokenValue := r.URL.Query().Get("token")
+	if tokenValue == "" {
+		return nil, ErrorTokenRequest
+	}
+
+	return &endpoint.CheckTokenRequest{
+		Token: tokenValue,
+	}, nil
 }
 
 func decodeSimpleRequest(ctx context.Context, r *http.Request) (interface{}, error) {
