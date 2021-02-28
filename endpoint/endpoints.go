@@ -32,16 +32,6 @@ var (
 	ErrNotPermit            = errors.New("not permit")
 )
 
-type TokenRequest struct {
-	GrantType string
-	Reader    *http.Request
-}
-
-type TokenResponse struct {
-	AccessToken *model.OAuth2Token `json:"access_token"`
-	Error       string             `json:"error"`
-}
-
 // MakeClientAuthorizationMiddleware : 中間層, 驗證請求上下文是否攜帶客戶端信息
 func MakeClientAuthorizationMiddleware(logger log.Logger) endpoint.Middleware {
 	// Endpoint is the fundamental building block of servers and clients.
@@ -61,6 +51,16 @@ func MakeClientAuthorizationMiddleware(logger log.Logger) endpoint.Middleware {
 			return next(ctx, request)
 		}
 	}
+}
+
+type TokenRequest struct {
+	GrantType string
+	Reader    *http.Request
+}
+
+type TokenResponse struct {
+	AccessToken *model.OAuth2Token `json:"access_token"`
+	Error       string             `json:"error"`
 }
 
 // MakeTokenEndpoint : 將context終獲取到的客戶端信息, 委託TokenGrant 根據授權類型和用戶憑證為客戶端生成token
@@ -104,6 +104,60 @@ func MakeCheckTokenEndpoint(svc service.TokenService) endpoint.Endpoint {
 		return CheckTokenResponse{
 			OAuthDetails: tokenDetails,
 			Error:        errString,
+		}, nil
+	}
+}
+
+type SimpleRequest struct {
+}
+
+type SimpleResponse struct {
+	Result string `json:"result"`
+	Error  string `json:"error"`
+}
+
+// MakeSimpleEndpoint :
+func MakeSimpleEndpoint(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		result := svc.SimpleData(ctx.Value(OAuth2DetailsKey).(*model.OAuth2Details).User.Username)
+		return &SimpleResponse{
+			Result: result,
+		}, nil
+	}
+}
+
+type AdminRequest struct {
+}
+
+type AdminResponse struct {
+	Result string `json:"result"`
+	Error  string `json:"error"`
+}
+
+// MakeAdminEndpoint
+func MakeAdminEndpoint(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		result := svc.AdminData(ctx.Value(OAuth2DetailsKey).(*model.OAuth2Details).User.Username)
+		return &AdminResponse{
+			Result: result,
+		}, nil
+	}
+}
+
+// HealthRequest
+type HealthRequest struct{}
+
+// HealthResponse
+type HealthResponse struct {
+	Status bool `json:"status"`
+}
+
+// MakeHealthCheckEndpoint 建立健康檢查Endpoint
+func MakeHealthCheckEndpoint(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		status := svc.HealthCheck()
+		return HealthResponse{
+			Status: status,
 		}, nil
 	}
 }
