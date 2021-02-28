@@ -84,6 +84,8 @@ func main() {
 	clientDetailsService = service.NewInMemoryClientDetailService([]*model.ClientDetails{{
 		"clientId",
 		"clientSecret",
+		// 20,
+		// 180,
 		1800,
 		18000,
 		"http://127.0.0.1",
@@ -128,7 +130,7 @@ func main() {
 	//http server
 	go func() {
 		config.Logger.Println("Http Server start at port:" + strconv.Itoa(*servicePort))
-		// 啟動前執行註冊
+		// 啟動前執行註冊 呼叫/health api
 		if !discoveryClient.Register(*serviceName, instanceId, "/health", *serviceHost, *servicePort, nil, config.Logger) {
 			config.Logger.Printf("use-string-service for service %s failed.", serviceName)
 			// 註冊失敗
